@@ -7,9 +7,15 @@
 ;;;;;;;;;;;;;;;
 ;; DECLARE SOME VARIABLES HERE
   .rsset $0000  ;;start variables at ram location 0
-buttons1   .rs 1  ; player 1 gamepad buttons, one bit per button
-bulletIsActive .rs 1 ; is bullet active?
-timer .rs 1 ; Timer
+buttons1			.rs 1 ; player 1 gamepad buttons, one bit per button
+bulletIsActive		.rs 1 ; is bullet active?
+enemy1IsActive		.rs 1 ; is enemy 1 active?
+timer				.rs 1 ; Stores a valuse for the Timer
+playerX				.rs 1 ; Stores the players X position
+playerY				.rs 1 ; Stores the players Y position
+gravity				.rs 1 ; Stores the value for Gravity
+enemyX				.rs 1 ; Stores the enemies X position
+enemyY				.rs 1 ; Stores the enemies Y position
 
 
 CONTROLLER_A      = %10000000
@@ -20,6 +26,11 @@ CONTROLLER_UP     = %00001000
 CONTROLLER_DOWN   = %00000100
 CONTROLLER_LEFT   = %00000010
 CONTROLLER_RIGHT  = %00000001
+
+RIGHTWALL      = $F4
+TOPWALL        = $10
+BOTTOMWALL     = $D4
+LEFTWALL       = $03
     
   .bank 0
   .org $C000 
@@ -108,9 +119,15 @@ NMI:
   LDA #$02
   STA $4014       ; set the high byte (02) of the RAM address, start the transfer
   
+  ;Update Players position coordinates
+  LDA $0200
+  STA playerY
+  CLC
+  LDA $0203
+  STA playerX
+  CLC
   
-  
-  ; Update enemy position
+  ; Update enemy Y position
   LDA $0218
   SEC
   SBC #2
@@ -137,15 +154,21 @@ TimeCount:
   STA $0217
 .Done:
 
+BorderControl:
+  LDA playerX
+  CMP #LEFTWALL
+  BCS .Done
+.Done:
+
 UpdateBullet:
   LDA bulletIsActive
   BEQ UpdateBulletDone
   
   ; Update bullet position
-  LDA $0213
-  CLC
-  ADC #0
-  STA $0213
+  ;LDA $0213
+  ;CLC
+  ;ADC #0
+  ;STA $0213
   
   ; Check if bullet is off top of screen
   BCC .BulletNotOffTop
@@ -167,7 +190,7 @@ UpdateBullet:
   
   LDA $0213 ; bullet X
   SEC
-  SBC $0218 ; enemy X
+  SBC $0221 ; enemy X
   CLC
   ADC #4
   BMI UpdateBulletDone ; Branch if bulletX - enemyX + 4 < 0
@@ -177,14 +200,7 @@ UpdateBullet:
   
   LDA #0
   STA bulletIsActive ; kill the bullet
-  STA $0210
-  STA $0211
-  STA $0212
-  STA $0213
-  STA $0214
-  STA $0215
-  STA $0216
-  STA $0217
+  STA $0218
   
   
 UpdateBulletDone:
@@ -221,7 +237,7 @@ ReadDown
   CLC
   LDA $0200, x
   ADC #$01
-  STA $0200, x       ; save sprite X position
+  STA $0200, x       ; save sprite Y position
   INX
   INX
   INX
@@ -235,6 +251,7 @@ ReadLeft:
   AND #CONTROLLER_LEFT  ; only look at bit 0
   BEQ .Done   ; branch to ReadADone if button is NOT pressed (0)
                   ; add instructions here to do something when button IS pressed (1)
+
   LDX #0
 .Loop:
   SEC
