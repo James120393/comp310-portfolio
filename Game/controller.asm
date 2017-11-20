@@ -8,8 +8,9 @@
 ;; DECLARE SOME VARIABLES HERE
   .rsset $0000  ;;start variables at ram location 0
 buttons1			.rs 1 ; player 1 gamepad buttons, one bit per button
-bulletIsActive		.rs 1 ; is bullet active?
+enemyIsActive		.rs 1 ; is bullet active?
 enemy1IsActive		.rs 1 ; is enemy 1 active?
+fireIsActive		.rs 1 ; is fire active?
 timer				.rs 1 ; Stores a valuse for the Timer
 playerX				.rs 1 ; Stores the players X position
 playerY				.rs 1 ; Stores the players Y position
@@ -137,16 +138,18 @@ NMI:
   ADC #1
   STA $0217
 
+
   ; Update enemy Y position
+
   LDA $0218
   SEC
   SBC #1
   STA $0218
-  CLC
-  LDA $0221
+
+  LDA $021B
   SEC
   SBC #1
-  STA $0221
+  STA $021B
 
 
 TimeCount:
@@ -159,7 +162,7 @@ TimeCount:
 
 .Killfire:
   LDA #0
-  STA bulletIsActive ; kill the bullet
+  STA fireIsActive ; kill the Fire
   STA $0210
   STA $0211
   STA $0212
@@ -177,52 +180,50 @@ BorderControl:
 .Done:
 
 UpdateBullet:
-  LDA bulletIsActive
+  LDA enemyIsActive
   CMP #0
-  BEQ UpdateBulletDone
-  
-  ; Update bullet position
-  ;LDA $0214
-  ;CLC
-  ;ADC #0
-  ;STA $0214
+  BEQ UpdateEnemyDone
   
   ; Check if bullet is off top of screen
   ;BCC .BulletNotOffTop
   ;LDA #0
-  ;STA bulletIsActive
-  ;JMP UpdateBulletDone
+  ;STA enemyIsActive
+  ;JMP UpdateEnemyDone
 ;.BulletNotOffTop
   
   ; Check collision
-  LDA $0210 ; bullet Y
+  LDA $0203 ; bullet Y
   SEC
   SBC $0218 ; enemy y
   CLC
   ADC #4
-  BMI UpdateBulletDone ; Branch if bulletY - enemyY + 4 < 0
+  BMI UpdateEnemyDone ; Branch if bulletY - enemyY + 4 < 0
   SEC
   SBC #8
-  BPL UpdateBulletDone ; branch if bulletY - enemyY - 4 > 0
+  BPL UpdateEnemyDone ; branch if bulletY - enemyY - 4 > 0
   
   LDA $0213 ; bullet X
   SEC
-  SBC $0218 ; enemy X
+  SBC $021B ; enemy X
   CLC
   ADC #4
-  BMI UpdateBulletDone ; Branch if bulletX - enemyX + 4 < 0
+  BMI UpdateEnemyDone ; Branch if bulletX - enemyX + 4 < 0
   SEC
   SBC #8
-  BPL UpdateBulletDone ; branch if bulletX - enemyX - 4 > 0
+  BPL UpdateEnemyDone ; branch if bulletX - enemyX - 4 > 0
   
   LDA #0
-  STA bulletIsActive ; kill the bullet
+  STA enemyIsActive ; kill the emeny
   STA $0218
+  STA $0219
+  STA $0220
+  STA $021B
   
   
-UpdateBulletDone:
+UpdateEnemyDone:
 
   JSR ReadController1
+
 
 ReadUp:
   LDA buttons1       ; player 1 - A
@@ -327,11 +328,11 @@ ReadA:
   AND #CONTROLLER_A
   BEQ .Done
   
-  LDA bulletIsActive
+  LDA fireIsActive
   CMP #1
   BEQ .Done
   
-  ; Fire bullet
+  ; Fire fire
   LDA $0200  ; Vertical
   CLC
   ADC #$4
