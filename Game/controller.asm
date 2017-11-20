@@ -96,7 +96,7 @@ LoadSpritesLoop:
   LDA sprites, x        ; load data from address (sprites +  x)
   STA $0200, x          ; store into RAM address ($0200 + x)
   INX                   ; X = X + 1
-  CPX #$24              ; Compare X to hex $20, decimal 32
+  CPX #$30              ; Compare X to hex $20, decimal 32
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                         ; if compare was equal to 32, keep going down
               
@@ -127,11 +127,27 @@ NMI:
   STA playerX
   CLC
   
+  ; Update fire X position
+  LDA $0213
+  CLC
+  ADC #1
+  STA $0213
+  LDA $0217
+  CLC
+  ADC #1
+  STA $0217
+
   ; Update enemy Y position
   LDA $0218
   SEC
-  SBC #2
+  SBC #1
   STA $0218
+  CLC
+  LDA $0221
+  SEC
+  SBC #1
+  STA $0221
+
 
 TimeCount:
   LDA timer
@@ -162,20 +178,21 @@ BorderControl:
 
 UpdateBullet:
   LDA bulletIsActive
+  CMP #0
   BEQ UpdateBulletDone
   
   ; Update bullet position
-  ;LDA $0213
+  ;LDA $0214
   ;CLC
   ;ADC #0
-  ;STA $0213
+  ;STA $0214
   
   ; Check if bullet is off top of screen
-  BCC .BulletNotOffTop
-  LDA #0
-  STA bulletIsActive
-  JMP UpdateBulletDone
-.BulletNotOffTop
+  ;BCC .BulletNotOffTop
+  ;LDA #0
+  ;STA bulletIsActive
+  ;JMP UpdateBulletDone
+;.BulletNotOffTop
   
   ; Check collision
   LDA $0210 ; bullet Y
@@ -190,7 +207,7 @@ UpdateBullet:
   
   LDA $0213 ; bullet X
   SEC
-  SBC $0221 ; enemy X
+  SBC $0218 ; enemy X
   CLC
   ADC #4
   BMI UpdateBulletDone ; Branch if bulletX - enemyX + 4 < 0
@@ -205,7 +222,6 @@ UpdateBullet:
   
 UpdateBulletDone:
 
-
   JSR ReadController1
 
 ReadUp:
@@ -213,6 +229,11 @@ ReadUp:
   AND #CONTROLLER_UP  ; only look at bit 0
   BEQ .Done   ; branch to ReadADone if button is NOT pressed (0)
                   ; add instructions here to do something when button IS pressed (1)
+
+  LDA $0200       ; Load Sprite Y Position
+  CMP #TOPWALL    ; Compare it to the Top wall position
+  BEQ .Done       ; Branch to jump if the Y position and wall match
+
   LDX #$0
 .Loop:
   SEC
@@ -232,6 +253,11 @@ ReadDown
   AND #CONTROLLER_DOWN  ; only look at bit 0
   BEQ .Done   ; branch to ReadADone if button is NOT pressed (0)
                   ; add instructions here to do something when button IS pressed (1)
+
+  LDA $0200       ; Load Sprite Y Position
+  CMP #BOTTOMWALL ; Compare it to the Bottom wall position
+  BEQ .Done       ; Branch to jump if the Y position and wall match
+
   LDX #$0
 .Loop:
   CLC
@@ -251,6 +277,10 @@ ReadLeft:
   AND #CONTROLLER_LEFT  ; only look at bit 0
   BEQ .Done   ; branch to ReadADone if button is NOT pressed (0)
                   ; add instructions here to do something when button IS pressed (1)
+				  
+  LDA $0203       ; Load Sprite X Position
+  CMP #LEFTWALL   ; Compare it to the left wall position
+  BEQ .Done       ; Branch to jump if the X position and wall match
 
   LDX #0
 .Loop:
@@ -273,6 +303,11 @@ ReadRight:
   AND #CONTROLLER_RIGHT  ; only look at bit 0
   BEQ .Done   ; branch to ReadBDone if button is NOT pressed (0)
                   ; add instructions here to do something when button IS pressed (1)
+
+  LDA $0203       ; Load Sprite X Position
+  CMP #RIGHTWALL  ; Compare it to the left wall position
+  BEQ .Done       ; Branch to jump if the X position and wall match
+
   LDX #0
 .Loop:
   LDA $0203, x    ; load sprite X position
@@ -293,7 +328,8 @@ ReadA:
   BEQ .Done
   
   LDA bulletIsActive
-  BNE .Done
+  CMP #1
+  BEQ .Done
   
   ; Fire bullet
   LDA $0200  ; Vertical
@@ -321,14 +357,11 @@ ReadA:
   CLC
   ADC #8
   STA $0217
-  
+
   LDA timer
   LDA #0
   STA timer
-  
-  LDA #0
-  STA bulletIsActive
-  
+ 
 
 .Done: 
   RTI             ; return from interrupt
