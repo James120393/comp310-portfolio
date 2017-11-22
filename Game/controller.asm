@@ -173,13 +173,7 @@ TimeCount:
   STA $0217
 .Done:
 
-BorderControl:
-  LDA playerX
-  CMP #LEFTWALL
-  BCS .Done
-.Done:
-
-UpdateBullet:
+UpdateEnemy:
   LDA enemyIsActive
   CMP #0
   BEQ UpdateEnemyDone
@@ -219,42 +213,16 @@ UpdateBullet:
   STA $0220
   STA $021B
   
+ UpdateEnemyDone:
+   JSR ReadController1
+
+
+
+Gravity:
+  LDA buttons1        ; player 1 - A
+  AND #CONTROLLER_A  ; only look at bit 0
+  BNE .Done           ; branch to ReadADone if button IS pressed (1)
   
-UpdateEnemyDone:
-
-  JSR ReadController1
-
-
-ReadUp:
-  LDA buttons1       ; player 1 - A
-  AND #CONTROLLER_UP  ; only look at bit 0
-  BEQ .Done   ; branch to ReadADone if button is NOT pressed (0)
-                  ; add instructions here to do something when button IS pressed (1)
-
-  LDA $0200       ; Load Sprite Y Position
-  CMP #TOPWALL    ; Compare it to the Top wall position
-  BEQ .Done       ; Branch to jump if the Y position and wall match
-
-  LDX #$0
-.Loop:
-  SEC
-  LDA $0200, x
-  SBC #$01
-  STA $0200, x       ; save sprite X position
-  INX
-  INX
-  INX
-  INX
-  CPX #$10
-  BNE .Loop
-.Done:        ; handling this button is done
-
-ReadDown
-  LDA buttons1       ; player 1 - A
-  AND #CONTROLLER_DOWN  ; only look at bit 0
-  BEQ .Done   ; branch to ReadADone if button is NOT pressed (0)
-                  ; add instructions here to do something when button IS pressed (1)
-
   LDA $0200       ; Load Sprite Y Position
   CMP #BOTTOMWALL ; Compare it to the Bottom wall position
   BEQ .Done       ; Branch to jump if the Y position and wall match
@@ -272,6 +240,8 @@ ReadDown
   CPX #$10
   BNE .Loop
 .Done:        ; handling this button is done
+
+
 
 ReadLeft: 
   LDA buttons1       ; player 1 - A
@@ -324,8 +294,33 @@ ReadRight:
 .Done:        ; handling this button is done
 
 ReadA:
+  LDA buttons1        ; player 1 - A
+  AND #CONTROLLER_A   ; only look at bit 0
+  BEQ .Done           ; branch to ReadADone if button is NOT pressed (0)
+                      ; add instructions here to do something when button IS pressed (1)
+
+  LDA $0200           ; Load Sprite Y Position
+  CMP #TOPWALL        ; Compare it to the Top wall position
+  BEQ .Done           ; Branch to jump if the Y position and wall match
+
+  LDX #$0
+.Loop:
+  SEC
+  LDA $0200, x
+  SBC #$01
+  STA $0200, x        ; save sprite X position
+  INX
+  INX
+  INX
+  INX
+  CPX #$10
+  BNE .Loop
+.Done:               ; handling this button is done
+
+
+ReadB:
   LDA buttons1
-  AND #CONTROLLER_A
+  AND #CONTROLLER_B
   BEQ .Done
   
   LDA fireIsActive
@@ -363,7 +358,6 @@ ReadA:
   LDA #0
   STA timer
  
-
 .Done: 
   RTI             ; return from interrupt
   JMP TimeCount 
