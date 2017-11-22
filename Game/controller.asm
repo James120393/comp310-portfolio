@@ -141,6 +141,12 @@ NMI:
 
   ; Update enemy Y position
 
+SpawnEnemy:
+  LDA enemyIsActive
+  AND #1
+  BNE .Done
+
+
   LDA $0218
   SEC
   SBC #1
@@ -151,6 +157,7 @@ NMI:
   SBC #1
   STA $021B
 
+.Done:
 
 TimeCount:
   LDA timer
@@ -174,36 +181,25 @@ TimeCount:
 .Done:
 
 UpdateEnemy:
-  LDA enemyIsActive
-  CMP #0
-  BEQ UpdateEnemyDone
-  
-  ; Check if bullet is off top of screen
-  ;BCC .BulletNotOffTop
-  ;LDA #0
-  ;STA enemyIsActive
-  ;JMP UpdateEnemyDone
-;.BulletNotOffTop
-  
   ; Check collision
-  LDA $0203 ; bullet Y
+  LDA $0214 ; bullet Y
   SEC
   SBC $0218 ; enemy y
   CLC
-  ADC #4
+  ADC #8
   BMI UpdateEnemyDone ; Branch if bulletY - enemyY + 4 < 0
   SEC
-  SBC #8
+  SBC #12
   BPL UpdateEnemyDone ; branch if bulletY - enemyY - 4 > 0
   
-  LDA $0213 ; bullet X
+  LDA $0217 ; bullet X
   SEC
   SBC $021B ; enemy X
   CLC
-  ADC #4
+  ADC #8
   BMI UpdateEnemyDone ; Branch if bulletX - enemyX + 4 < 0
   SEC
-  SBC #8
+  SBC #12
   BPL UpdateEnemyDone ; branch if bulletX - enemyX - 4 > 0
   
   LDA #0
@@ -214,7 +210,7 @@ UpdateEnemy:
   STA $021B
   
  UpdateEnemyDone:
-   JSR ReadController1
+  JSR ReadController1
 
 
 
