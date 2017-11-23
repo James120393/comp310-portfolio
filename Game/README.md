@@ -1,4 +1,15 @@
 # comp310-portfolio
-Base repository for COMP310 assignment 1
 
-Link to Pull Request https://github.com/Falmouth-Games-Academy/comp310-portfolio/pull/5
+Student ID: 1506530
+
+Controls
+
+A = Move up
+B = Breath Fire
+
+Left = Move Left
+Right = Move Right
+
+Collect 10 gems to win
+Do not get hit by an enemy or you will loose.
+
