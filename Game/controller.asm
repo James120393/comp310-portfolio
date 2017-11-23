@@ -11,12 +11,13 @@ buttons1			.rs 1 ; player 1 gamepad buttons, one bit per button
 enemyIsActive		.rs 1 ; is bullet active?
 enemy1IsActive		.rs 1 ; is enemy 1 active?
 fireIsActive		.rs 1 ; is fire active?
+gemIsActive         .rs 1 ; is gem active?
 timer				.rs 1 ; Stores a valuse for the Timer
-playerX				.rs 1 ; Stores the players X position
-playerY				.rs 1 ; Stores the players Y position
+timerEnemy          .rs 1 ; Stores a valuse for the enemy spawn Timer
 gravity				.rs 1 ; Stores the value for Gravity
 enemyX				.rs 1 ; Stores the enemies X position
 enemyY				.rs 1 ; Stores the enemies Y position
+randLocation     .rs 1 ; Stores a random number for gem locations
 
 
 CONTROLLER_A      = %10000000
@@ -111,8 +112,8 @@ LoadSpritesLoop:
 
 Forever:
   JMP Forever     ;jump back to Forever, infinite loop
-  
- 
+
+
 
 NMI:
   LDA #$00
@@ -120,13 +121,6 @@ NMI:
   LDA #$02
   STA $4014       ; set the high byte (02) of the RAM address, start the transfer
   
-  ;Update Players position coordinates
-  LDA $0200
-  STA playerY
-  CLC
-  LDA $0203
-  STA playerX
-  CLC
   
   ; Update fire X position
   LDA $0213
@@ -138,225 +132,345 @@ NMI:
   ADC #1
   STA $0217
 
+  LDA randLocation       ; Load randLoaction
+  CLC                    ; Clear Carry flag
+  ADC #1                 ; Add 1
+  STA randLocation       ; Save to randLocation
+ 
 
-  ; Update enemy Y position
-
-SpawnEnemy:
-  LDA enemyIsActive
-  AND #1
-  BNE .Done
-
-
-  LDA $0218
-  SEC
-  SBC #1
-  STA $0218
-
-  LDA $021B
-  SEC
-  SBC #1
-  STA $021B
-
-.Done:
-
-TimeCount:
-  LDA timer
-  CLC
-  ADC #1
-  STA timer
-  CMP #20
-  BNE .Done
-
-.Killfire:
-  LDA #0
-  STA fireIsActive ; kill the Fire
-  STA $0210
-  STA $0211
-  STA $0212
-  STA $0213
-  STA $0214
-  STA $0215
-  STA $0216
-  STA $0217
-.Done:
-
-UpdateEnemy:
-  ; Check collision
-  LDA $0214 ; bullet Y
-  SEC
-  SBC $0218 ; enemy y
-  CLC
-  ADC #8
-  BMI UpdateEnemyDone ; Branch if bulletY - enemyY + 4 < 0
-  SEC
-  SBC #12
-  BPL UpdateEnemyDone ; branch if bulletY - enemyY - 4 > 0
-  
-  LDA $0217 ; bullet X
-  SEC
-  SBC $021B ; enemy X
-  CLC
-  ADC #8
-  BMI UpdateEnemyDone ; Branch if bulletX - enemyX + 4 < 0
-  SEC
-  SBC #12
-  BPL UpdateEnemyDone ; branch if bulletX - enemyX - 4 > 0
-  
-  LDA #0
-  STA enemyIsActive ; kill the emeny
-  STA $0218
-  STA $0219
-  STA $0220
-  STA $021B
-  
- UpdateEnemyDone:
-  JSR ReadController1
-
-
-
+ ; Used to drag player down 
 Gravity:
-  LDA buttons1        ; player 1 - A
-  AND #CONTROLLER_A  ; only look at bit 0
+  LDA buttons1        ; player 1
+  AND #CONTROLLER_A   ; only look at bit 0
   BNE .Done           ; branch to ReadADone if button IS pressed (1)
   
-  LDA $0200       ; Load Sprite Y Position
-  CMP #BOTTOMWALL ; Compare it to the Bottom wall position
-  BEQ .Done       ; Branch to jump if the Y position and wall match
-
-  LDX #$0
-.Loop:
-  CLC
-  LDA $0200, x
-  ADC #$01
-  STA $0200, x       ; save sprite Y position
-  INX
-  INX
-  INX
-  INX
-  CPX #$10
-  BNE .Loop
-.Done:        ; handling this button is done
-
-
-
-ReadLeft: 
-  LDA buttons1       ; player 1 - A
-  AND #CONTROLLER_LEFT  ; only look at bit 0
-  BEQ .Done   ; branch to ReadADone if button is NOT pressed (0)
-                  ; add instructions here to do something when button IS pressed (1)
-				  
-  LDA $0203       ; Load Sprite X Position
-  CMP #LEFTWALL   ; Compare it to the left wall position
-  BEQ .Done       ; Branch to jump if the X position and wall match
-
-  LDX #0
-.Loop:
-  SEC
-  LDA $0203, x    ; load sprite X position
-  SEC             ; make sure the carry flag is clear
-  SBC #$01        ; A = A + 1
-  STA $0203, x    ; save sprite X position
-  INX
-  INX
-  INX
-  INX
-  CPX #$10
-  BNE .Loop       ; Stop looping after 4 sprites (X = 4*4 = 16)
-.Done:        ; handling this button is done
-  
-
-ReadRight: 
-  LDA buttons1       ; player 1 - B
-  AND #CONTROLLER_RIGHT  ; only look at bit 0
-  BEQ .Done   ; branch to ReadBDone if button is NOT pressed (0)
-                  ; add instructions here to do something when button IS pressed (1)
-
-  LDA $0203       ; Load Sprite X Position
-  CMP #RIGHTWALL  ; Compare it to the left wall position
-  BEQ .Done       ; Branch to jump if the X position and wall match
-
-  LDX #0
-.Loop:
-  LDA $0203, x    ; load sprite X position
-  CLC             ; make sure the carry flag is clear
-  ADC #$01        ; A = A + 1
-  STA $0203, x    ; save sprite X position
-  INX
-  INX
-  INX
-  INX
-  CPX #$10
-  BNE .Loop
-.Done:        ; handling this button is done
-
-ReadA:
-  LDA buttons1        ; player 1 - A
-  AND #CONTROLLER_A   ; only look at bit 0
-  BEQ .Done           ; branch to ReadADone if button is NOT pressed (0)
-                      ; add instructions here to do something when button IS pressed (1)
-
   LDA $0200           ; Load Sprite Y Position
-  CMP #TOPWALL        ; Compare it to the Top wall position
+  CMP #BOTTOMWALL     ; Compare it to the Bottom wall position
   BEQ .Done           ; Branch to jump if the Y position and wall match
 
   LDX #$0
 .Loop:
-  SEC
-  LDA $0200, x
-  SBC #$01
-  STA $0200, x        ; save sprite X position
+  LDA $0200, x        ; Load sprite Y position
+  CLC                 ; Clear carry flag 
+  ADC #$01            ; Add 1
+  STA $0200, x        ; save sprite Y position
+  INX                 ; Increment X 4 times to get the next sprite's Y
+  INX
+  INX
+  INX
+  CPX #$10            ; It must do this a number of times to move all 4 sprites
+  BNE .Loop           ; Branch back to the loop
+.Done:                ; handling this button is done
+
+
+  ; Update enemies position
+MoveEnemies:
+  LDA enemyIsActive
+  AND #1
+  BNE .Done
+
+.Loop:
+  LDA $021B, x           ; load sprite X position
+  SEC                    ; make sure the carry flag is clear
+  SBC #$01               ; A = A + 1
+  STA $021B, x           ; save sprite X position
   INX
   INX
   INX
   INX
+  LDA timerEnemy
+  CLC
+  ADC #1
+  STA timerEnemy
+  CMP #20  
   CPX #$10
   BNE .Loop
-.Done:               ; handling this button is done
+.Done:
 
 
-ReadB:
-  LDA buttons1
-  AND #CONTROLLER_B
-  BEQ .Done
-  
-  LDA fireIsActive
-  CMP #1
-  BEQ .Done
-  
-  ; Fire fire
-  LDA $0200  ; Vertical
-  CLC
-  ADC #$4
-  STA $0210
-  LDA #$02   ; Tile
+;Increments the timer value by 1 per frame
+TimeCount:
+  LDA timer              ; Load fire
+  CLC                    ; Clear Carry flag
+  ADC #1                 ; Add 1
+  STA timer              ; Save to timer
+  CMP #20                ; Do this 20 times then move on
+  BNE .Done              ; Branch to done
+						 
+.Killfire:				 
+  LDA #0                 ; Load a value of 0
+  STA fireIsActive       ; kill the Fire
+  STA $0210              ; Save the 0 value into the memory adresses of the fire
   STA $0211
-  LDA #0     ; Attributes
   STA $0212
-  LDA $0203  ; Horizontal
-  CLC
-  ADC #16
   STA $0213
-
-  LDA $0200  ;Verticle
-  CLC
-  ADC #$4
   STA $0214
-  LDA #$03   ;Tile
   STA $0215
-  LDA $0     ;Attributes
   STA $0216
-  LDA $0213  ;Horizontal
-  CLC
-  ADC #8
   STA $0217
+.Done:
 
-  LDA timer
-  LDA #0
-  STA timer
+UpdateEnemy0:
+  ; Check collision
+  LDA $0214              ; Fire Y
+  SEC					 ; Set carry flag
+  SBC $0218 			 ; Enemy Y
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireY - EnemyY + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireY - EnemyY - 8 > 0
+  
+  LDA $0217 			 ; Fire X
+  SEC					 ; Set carry flag
+  SBC $021B 			 ; Enemy X
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireX - EnemyX + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireX - EnemyX - 8 > 0
+  
+  LDA randLocation				 ; Load the value 0
+  STA $0218				 ; Save into the memory locations of the enemy to remove them from screen
+  STA $021B
+
+.Done:
+
+
+UpdateEnemy1:
+  ; Check collision
+  LDA $0214              ; Fire Y
+  SEC					 ; Set carry flag
+  SBC $021C 			 ; Enemy Y
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireY - EnemyY + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireY - EnemyY - 8 > 0
+  
+  LDA $0217 			 ; Fire X
+  SEC					 ; Set carry flag
+  SBC $021F 			 ; Enemy X
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireX - EnemyX + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireX - EnemyX - 8 > 0
+  
+  LDA randLocation				 ; Load the value 0
+  STA $021C				 ; Save into the memory locations of the enemy to remove them from screen
+  STA $021F
+.Done:
+
+
+UpdateEnemy2:
+  ; Check collision
+  LDA $0214              ; Fire Y
+  SEC					 ; Set carry flag
+  SBC $0220 			 ; Enemy Y
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireY - EnemyY + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireY - EnemyY - 8 > 0
+  
+  LDA $0217 			 ; Fire X
+  SEC					 ; Set carry flag
+  SBC $0223 			 ; Enemy X
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireX - EnemyX + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireX - EnemyX - 8 > 0
+  
+  LDA randLocation				 ; Load the value 0
+  STA $0220				 ; Save into the memory locations of the enemy to remove them from screen
+  STA $0223
+.Done:
+
+
+UpdateEnemy3:
+  ; Check collision
+  LDA $0214              ; Fire Y
+  SEC					 ; Set carry flag
+  SBC $0224 			 ; Enemy Y
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireY - EnemyY + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireY - EnemyY - 8 > 0
+  
+  LDA $0217 			 ; Fire X
+  SEC					 ; Set carry flag
+  SBC $0227 			 ; Enemy X
+  CLC					 ; Clear Carry flag
+  ADC #8				 ; Add 8
+  BMI .Done 			 ; Branch if FireX - EnemyX + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done 			 ; Branch if FireX - EnemyX - 8 > 0
+  
+  LDA randLocation				 ; Load the value 0
+  STA $0224				 ; Save into the memory locations of the enemy to remove them from screen
+  STA $0227
+.Done:
+
+
+
+UpdateGem:
+  ; Check collision
+  LDA $0200              ; Player Y
+  SEC		             ; Set carry flag
+  SBC $0228              ; Gem Y
+  CLC		             ; Clear Carry flag
+  ADC #8	             ; Add 8
+  BMI .Done              ; Branch if PlayerY - GemY + 8 < 0
+  SEC		             ; Set carry flag
+  SBC #12	             ; Subtract 12
+  BPL .Done              ; Branch if PlayerY - GemY - 8 > 0
+  			             
+  LDA $0203              ; Player X
+  SEC		             ; Set carry flag
+  SBC $022B              ; Gem X
+  CLC		             ; Clear Carry flag
+  ADC #8	             ; Add 8
+  BMI .Done              ; Branch if PlayerX - GemX + 8 < 0
+  SEC					 ; Set carry flag
+  SBC #12				 ; Subtract 12
+  BPL .Done              ; Branch if PlayerX - GemX - 8 > 0
+  
+  LDA randLocation                ; Load the value 0
+  STA $0228              ; Save into the memory locations of the gem to remove them from screen
+  STA $022B
  
-.Done: 
-  RTI             ; return from interrupt
-  JMP TimeCount 
+.Done:
+
+  JSR ReadController1
+
+
+ReadLeft: 
+  LDA buttons1           ; player 1
+  AND #CONTROLLER_LEFT   ; only look at bit 0
+  BEQ .Done              ; branch to ReadADone if button is NOT pressed (0)
+				         
+  LDA $0203              ; Load Sprite Y Position
+  CMP #LEFTWALL          ; Compare it to the Bottom wall position
+  BEQ .Done              ; Branch to jump if the Y position and wall match
+				         
+  LDX #0		         
+.Loop:			         
+  LDA $0203, x           ; Load sprite X position
+  SEC                    ; Set carry flag
+  SBC #$01               ; Add 1
+  STA $0203, x           ; save sprite X position
+  INX			         ; Increment X 4 times to get the next sprite's X
+  INX			         
+  INX			         
+  INX			         
+  CPX #$10		         ; It must do this a number of times to move all 4 sprites
+  BNE .Loop              ; Branch back to the loop
+.Done:                   ; handling this button is done
+  
+
+ReadRight: 
+  LDA buttons1           ; player 1
+  AND #CONTROLLER_RIGHT  ; only look at bit 0
+  BEQ .Done              ; branch to ReadBDone if button is NOT pressed (0)
+  				         
+  LDA $0203              ; Load Sprite X Position
+  CMP #RIGHTWALL         ; Compare it to the Bottom wall position
+  BEQ .Done              ; Branch to jump if the X position and wall match
+				         
+  LDX #0		         
+.Loop:			         
+  LDA $0203, x           ; Load sprite X position
+  CLC                    ; Set carry flag
+  ADC #$01               ; Add 1
+  STA $0203, x           ; save sprite X position
+  INX			         ; Increment X 4 times to get the next sprite's X
+  INX			         
+  INX			         
+  INX			         
+  CPX #$10               ; It must do this a number of times to move all 4 sprites
+  BNE .Loop              ; Branch back to the loopp		  
+.Done:                   ; handling this button is done        
+		
+		
+ReadA:
+  LDA buttons1           ; player 1
+  AND #CONTROLLER_A      ; only look at bit 0
+  BEQ .Done              ; branch to ReadADone if button is NOT pressed (0)
+                         
+					     
+  LDA $0200              ; Load Sprite Y Position
+  CMP #TOPWALL           ; Compare it to the Bottom wall position
+  BEQ .Done              ; Branch to jump if the Y position and wall match
+					     
+  LDX #$0			     
+.Loop:				     
+  SEC				     ; Load sprite Y position
+  LDA $0200, x		     ; Clear carry flag 
+  SBC #$01			     ; Add 1
+  STA $0200, x           ; save sprite Y position
+  INX				     ; Increment X 4 times to get the next sprite's Y
+  INX				     
+  INX				     
+  INX				     
+  CPX #$10			     ; It must do this a number of times to move all 4 sprites
+  BNE .Loop			     ; Branch back to the loop
+.Done:                   ; handling this button is done
+					     
+					     
+ReadB:				     
+  LDA buttons1           ; player 1
+  AND #CONTROLLER_B	     ; only look at bit 0
+  BEQ .Done			     ; branch to ReadADone if button is NOT pressed (0)
+  					     
+  LDA fireIsActive       ; Check is fire is active(1)
+  CMP #1                 ; Compare to 1
+  BEQ .Done              ; Branch to Done if fire is active
+  
+  ; Fire Comes in two sprites
+  LDA $0200              ; Load the Y Value of the player
+  CLC                    ; Clear the carry flag
+  ADC #$4                ; Add 4 to the Value
+  STA $0210              ; Save the new Y value to the Y value of the Fire
+  LDA #$02               ; The Tile for the sprites image
+  STA $0211              ; Store the tile into memory
+  LDA #0                 ; Attributes
+  STA $0212              ; Save the attibutes
+  LDA $0203              ; Load the players X Value
+  CLC                    ; Clear the Carry FLag
+  ADC #16                ; Add 16 to the X value
+  STA $0213              ; Save the new X value to the X value of the Fire
+					     
+  LDA $0200              ; Load the Y Value of the player
+  CLC				     ; Clear the carry flag
+  ADC #$4			     ; Add 4 to the Value
+  STA $0214			     ; Save the new Y value to the Y value of the Fire
+  LDA #$03   		     ; The Tile for the sprites image
+  STA $0215			     ; Store the tile into memory
+  LDA $0     		     ; Attributes
+  STA $0216			     ; Save the attibutes
+  LDA $0213  		     ; Load the players X Value
+  CLC				     ; Clear the Carry FLag
+  ADC #8			     ; Add 16 to the X value
+  STA $0217			     ; Save the new X value to the X value of the Fire  
+					     
+  LDA timer              ; Load the timer
+  LDA #0                 ; Load a 0 value
+  STA timer              ; Save to timer to reset its value to 0
+ 					     
+.Done: 				     
+  RTI                    ; return from interrupt
+  JMP TimeCount          ; Jump to TimeCount to despawn the fire after the elapsed time
 
 ReadController1:
   LDA #$01
@@ -390,7 +504,12 @@ sprites:
   .db $88, $11, $00, $88   ;sprite 3
   .db $00, $02, $00, $00   ;bullet 0
   .db $00, $03, $00, $08   ;bullet 1
-  .db $20, $12, $00, $88   ;enemy
+  .db $20, $12, $00, $88   ;enemy0
+  .db $80, $12, $00, $88   ;enemy2
+  .db $50, $12, $00, $88   ;enemy3
+  .db $90, $12, $00, $88   ;enemy4
+  .db $40, $30, $00, $88   ;gem
+
 
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the 
