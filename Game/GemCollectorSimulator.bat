@@ -1,2 +1,2 @@
-NESASM3 controller.asm
+NESASM3 GemCollectorSimulator.asm
 pause
