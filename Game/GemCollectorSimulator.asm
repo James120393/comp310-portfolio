@@ -388,10 +388,8 @@ PlayerCollisionCheck0:
   LDA randLocation2		 ; Load random value
   STA $021B
 
-  LDA $022D              ; Load Number Tile
-  CLC					 ; Clear Carry Flag
-  ADC #9				 ; Add one
-  STA $022D				 : Incremnt the Score by 1
+  LDA #$F9				 ; Load F9
+  STA $022D				 ; Store into the Tile reference
 .Done:
 
 
@@ -423,10 +421,8 @@ PlayerCollisionCheck1:
   LDA randLocation2		 ; Load random value
   STA $021F
 
-  LDA $022D              ; Load Number Tile
-  CLC					 ; Clear Carry Flag
-  ADC #9				 ; Add one
-  STA $022D				 : Incremnt the Score by 1
+  LDA #$F9				 ; Load F9
+  STA $022D				 ; Store into the Tile reference
 .Done:
 
 
@@ -458,10 +454,8 @@ PlayerCollisionCheck2:
   LDA randLocation2		 ; Load random value
   STA $0223
 
-  LDA $022D              ; Load Number Tile
-  CLC					 ; Clear Carry Flag
-  ADC #9				 ; Add one
-  STA $022D				 : Incremnt the Score by 1
+  LDA #$F9				 ; Load F9
+  STA $022D				 ; Store into the Tile reference
 .Done:
 
 
@@ -493,10 +487,8 @@ PlayerCollisionCheck3:
   LDA randLocation2		 ; Load random value
   STA $0227
 
-  LDA $022D              ; Load Number Tile
-  CLC					 ; Clear Carry Flag
-  ADC #9				 ; Add one
-  STA $022D				 : Incremnt the Score by 1
+  LDA #$F9				 ; Load F9
+  STA $022D				 ; Store into the Tile reference
 .Done:
 
 UpdateGem:
@@ -530,7 +522,7 @@ UpdateGem:
   LDA $022D              ; Load Number Tile
   CLC                    ; Clear Carry Flag
   ADC #1                 ; Add one
-  STA $022D              : Incremnt the Score by 1
+  STA $022D              ; Incremnt the Score by 1
  
 .Done:
 
