@@ -668,9 +668,9 @@ ReadController1Loop:
   .bank 1
   .org $E000
 palette:
-  .db $0F,$23,$27,$38, $0F,$23,$27,$38, $0F,$23,$27,$38, $0F,$23,$27,$38
+  .db $0F,$23,$27,$38, $0F,$23,$27,$20, $0F,$23,$27,$20, $0F,$23,$27,$20
 
-  .db $22,$30,$28,$39, $0F,$23,$27,$38, $0F,$23,$27,$38, $0F,$23,$27,$38
+  .db $0C,$15,$27,$20, $0F,$23,$27,$38, $0F,$23,$27,$38, $0F,$23,$27,$38
 
 sprites:
      ;vert tile attr horiz
@@ -680,11 +680,11 @@ sprites:
   .db $88, $11, $01, $88   ;sprite 3
   .db $00, $02, $00, $00   ;Fire 0
   .db $00, $03, $00, $08   ;Fire 1
-  .db $20, $12, $00, $00   ;enemy0
-  .db $80, $12, $00, $00   ;enemy2
-  .db $50, $12, $00, $00   ;enemy3
-  .db $90, $12, $00, $00   ;enemy4
-  .db $40, $30, $00, $00   ;gem
+  .db $20, $12, $02, $00   ;enemy0
+  .db $80, $12, $02, $00   ;enemy2
+  .db $50, $12, $02, $00   ;enemy3
+  .db $90, $12, $02, $00   ;enemy4
+  .db $40, $30, $02, $00   ;gem
   .db $10, $F0, $00, $10   ;One
 
   .org $FFFA     ;first of the three vectors starts here
@@ -695,8 +695,7 @@ sprites:
   .dw 0          ;external interrupt IRQ is not used in this tutorial
   
   
-;;;;;;;;;;;;;;  
-  
+;;;;;;;;;;;;;;   
   
   .bank 2
   .org $0000
